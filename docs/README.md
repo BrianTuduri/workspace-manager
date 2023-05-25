@@ -15,7 +15,7 @@ pip3 install python-dotenv
 
 ## Configuración
 
-En el directorio raiz existe un archivo `.env`en este se pueden ajustar ciertas configuraciones, estas son:
+En el directorio raiz existe un archivo `.env` en este se pueden ajustar ciertas configuraciones, estas son:
 ```
 PATH_PROFILE=/home/user/workspace-manager/profiles => Directorio de perfiles
 
