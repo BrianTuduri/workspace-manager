@@ -1,5 +1,5 @@
 {
-    "PATH_PROFILE": "/home/brian/workspace_manager/profiles",
+    "PATH_PROFILE": "~/workspace_manager/profiles",
     "TIMEOUT_BETWEEN_WORKSPACES": 0.6,
     "CLOSE_ALL_OPTION": true,
     "AUTOMATIC_START": true,

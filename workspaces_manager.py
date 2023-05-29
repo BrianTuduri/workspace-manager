@@ -15,7 +15,7 @@ class AppRunner:
             self.config = json.load(f)
 
 
-        self.path_profile = self.config["PATH_PROFILE"]
+        self.path_profile = os.path.expanduser(self.config["PATH_PROFILE"])
         self.menu_program = self.config["MENU_PROGRAM"]
         self.autostart_profile = self.config["AUTOSTART_PROFILE"]
         self.close_all_option = self.config["CLOSE_ALL_OPTION"]

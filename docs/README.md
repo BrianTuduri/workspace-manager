@@ -3,25 +3,33 @@
 ## Resumen
 Workspace Manager es un script de Python diseñado para crear y cambiar entre diferentes "perfiles" de trabajo. Cada perfil de trabajo define qué aplicaciones se deben abrir en qué workspaces, y los perfiles pueden ser seleccionados fácilmente a través de rofi.
 
-## Uso
+## Instalación
 
-Para usar Workspace Manager, primero deberá crear uno o más perfiles de trabajo. Luego, puede seleccionar un perfil a través de rofi y el script abrirá automáticamente las aplicaciones especificadas en los workspaces correspondientes.
+Para usar Workspace Manager, primero deberá crear uno o más perfiles de trabajo. Luego, puede seleccionar un perfil a través de ´rofi´ o ´wofi´ y el script abrirá automáticamente las aplicaciones especificadas en los workspaces correspondientes.
 
-Por favor `instalar el modulo dotenv` con pip.
+Solamente se debe clonar el repositorio, verificar la [configuración](#Configuración) y [ajustar su atajo de preferencia](#configuración-de-los-atajos-de-teclado).
 
 ```
-pip3 install python-dotenv
+git clone https://github.com/BrianTuduri/workspace-manager.git ~/workspace_manager
 ```
 
 ## Configuración
 
-En el directorio raiz existe un archivo `.env` en este se pueden ajustar ciertas configuraciones, estas son:
+En el directorio raiz existe un archivo `config.json` en este se pueden ajustar ciertas configuraciones, estas son:
 ```
-PATH_PROFILE=/home/user/workspace-manager/profiles => Directorio de perfiles
+PATH_PROFILE: /home/user/workspace-manager/profiles => Directorio de perfiles
 
-TIMEOUT_BETWEEN_WORKSPACES=1 => Timeout para abrir workspaces con aplicaciones
+MENU_PROGRAM: "wofi" => Se puede utilizar este script con rofi o wofi, estos son los valores que deben ir aqui.
 
-LEVEL_LOGGIN=INFO => Nivel de log
+TIMEOUT_BETWEEN_WORKSPACES: 0.6 => Timeout para abrir workspaces con aplicaciones
+
+"CLOSE_ALL_OPTION": true => Habilitar opción para cerrar todos los workspaces
+
+"AUTOMATIC_START": true => Habilitar opción para setear perfiles con arranque automatico
+
+"AUTOSTART_PROFILE": "" =>  Este valor lo configura solo el script, en caso de querer configurarlo manualmente, aqui debe ir el nonmbre de tu perfil.
+
+"LEVEL_LOGIN": "INFO" => Nivel de log
 
 ```
 ## Creación de perfiles
@@ -56,7 +64,38 @@ En este ejemplo, la combinación de teclas mod+Shift+i lanzará el Workspace Man
 
 ## Funcionamiento
 
+Existen 3 menús actualemente:
+
+↪ `Perfiles`
+
+↪ `Arranque automatico`
+
+↪ `Cerrar todos los workspaces`
+
+### `Perfiles`
 Cuando selecciona un perfil, Workspace Manager lee la configuración del perfil de un archivo JSON, verifica si las aplicaciones especificadas están instaladas y si los workspaces especificados existen. Si la aplicación está instalada, la abre en el workspace correspondiente. Si el workspace no existe, lo crea y luego abre la aplicación.
+
+### `Arranque automatico`
+Similar a lo que realice perfiles, siendo que este modo tiene dos submenús, `(agregar/borrar)`. Si agregas perfiles para el arranque automatico estos se ejecutar junto al inicio de tu sistema.
+
+Si quieres habilitar esta opción debes agregar una línea a tu archivo de configuración de tu gestor de escritorio (generalmente ubicado en ~/.config/*/config), hazlo de la siguiente de la siguiente manera:
+
+Usaremos a `sway` de ejemplo
+
+```
+sudo nano ~/.config/sway/config 
+```
+Y debes agregar esta linea
+
+```
+exec_always python3 $HOME/workspace_manager/workspaces_manager.py
+```
+
+Reemplaza "$HOME/workspace_manager/workspaces_manager.py" con la ruta completa a tu script de Python. exec_always ejecutará el comando cada vez que se recargue el archivo de configuración de sway, lo que significa que se ejecutará al inicio y cada vez que realices cambios en la configuración de tu entorno.
+
+### `Cerrar todos los workspaces`
+Este es un menu simple el cual te solicitara una confirmacion `[Si/No]` para comprobar que estas seguro de que quieres cerrar todos los workspaces.
+
 
 ## Advertencia
 
