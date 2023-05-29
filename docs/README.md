@@ -60,7 +60,7 @@ Los perfiles se pueden seleccionar a través de rofi. Puede lanzar rofi y selecc
 Para configurar un atajo de teclado para lanzar el Workspace Manager, agregue una línea como la siguiente a su archivo de configuración de Sway WM:
 
 ```bash
-bindsym $mod+Shift+i exec /home/user/workspace-manager/workspaces_manager.py
+bindsym $mod+Shift+i exec ~/workspace-manager/workspaces_manager.py
 ```
 
 En este ejemplo, la combinación de teclas mod+Shift+i lanzará el Workspace Manager.
