@@ -53,11 +53,11 @@ En este ejemplo, seleccionar este perfil abrirá Firefox en el workspace 1, Codi
 
 ## Selección de perfiles
 
-Los perfiles se pueden seleccionar a través de rofi. Puede lanzar rofi y seleccionar un perfil usando el atajo de teclado definido en su archivo de configuración de Sway WM.
+Los perfiles se pueden seleccionar a través del menú que se configuro. Puede lanzar rofi o wofi y seleccionar un perfil usando el atajo de teclado definido en su archivo de configuración de su entorno.
 
 ## Configuración de los atajos de teclado
 
-Para configurar un atajo de teclado para lanzar el Workspace Manager, agregue una línea como la siguiente a su archivo de configuración de Sway WM:
+Para configurar un atajo de teclado para lanzar el Workspace Manager, agregue una línea como la siguiente a su archivo de configuración de su entorno:
 
 ```bash
 bindsym $mod+Shift+i exec /home/user/workspace-manager/workspaces_manager.py
