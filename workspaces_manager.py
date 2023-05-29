@@ -7,66 +7,168 @@ import logging
 import sys
 import time
 from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv()
+class AppRunner:
+    def __init__(self):
+        self.path_file_config = f"{os.path.dirname(os.path.abspath(__file__))}/config.json"
+        with open(self.path_file_config, 'r') as f:
+            self.config = json.load(f)
 
-path_profile = os.getenv("PATH_PROFILE")
-timeout_between_workspaces = int(os.getenv("TIMEOUT_BETWEEN_WORKSPACES"))
-log_level_str = os.getenv("LEVEL_LOGGIN", "INFO")
-logging.basicConfig(level=getattr(logging, log_level_str.upper(), logging.INFO))
+        self.path_profile = self.config["PATH_PROFILE"]
+        self.timeout_between_workspaces = float(self.config["TIMEOUT_BETWEEN_WORKSPACES"])
+        self.log_level_str = self.config["LEVEL_LOGIN"]
+        logging.basicConfig(level=getattr(logging, self.log_level_str.upper(), logging.INFO)) # Agregando el 'self.'
+        self.autostart_profile = self.config["AUTOSTART_PROFILE"]
+        self.close_all_option = self.config["CLOSE_ALL_OPTION"]
+        self.automatic_start = self.config["AUTOMATIC_START"]
+        self.log_config()
 
-def check_if_installed(app):
-    try:
-        subprocess.check_call(["which", app.split()[0]], stdout=subprocess.DEVNULL)
-        return True
-    except subprocess.CalledProcessError:
-        return False
+        if self.automatic_start and self.autostart_profile:
+            self.open_profile(self.autostart_profile)
 
-def workspace_exists(workspace_number):
-    workspaces_output = subprocess.check_output(["swaymsg", "-t", "get_workspaces"]).decode()
-    workspaces = json.loads(workspaces_output)
-    return any(workspace['num'] == int(workspace_number) for workspace in workspaces)
+    def log_config(self):
+        logging.info(f'path_profile: {self.path_profile}')
+        logging.info(f'timeout_between_workspaces: {self.timeout_between_workspaces}')
+        logging.info(f'log_level_str: {self.log_level_str}') # Agregando el 'self.'
+        logging.info(f'autostart_profile: {self.autostart_profile}')
+        logging.info(f'close_all_option: {self.close_all_option}')
+        logging.info(f'automatic_start: {self.automatic_start}')
 
-def open_in_workspace(workspace_number, command):
-    if check_if_installed(command):
-        if workspace_exists(workspace_number):
-            subprocess.run(["swaymsg", f"workspace number {workspace_number}; exec {command}"])
-        else:
-            subprocess.run(["swaymsg", f"workspace {workspace_number}; exec {command}"])
-        time.sleep(timeout_between_workspaces)
-    else:
-        logging.error(f'La aplicación "{command}" no está instalada o no se encuentra en el PATH.')
+    def show_error_with_wofi(self, message):
+        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE) as wofi:
+            wofi.communicate(input=message.encode())
 
-def main():
-    profiles_dir = Path(path_profile)
+    def check_if_installed(self, app):
+        try:
+            subprocess.check_call(["which", app.split()[0]], stdout=subprocess.DEVNULL)
+            return True
+        except subprocess.CalledProcessError:
+            message = f'La aplicación "{app}" no está instalada o no se encuentra en el PATH.'
+            logging.error(message)
+            self.show_error_with_wofi(message)
+            return False
 
-    profiles = [str(f.stem) for f in profiles_dir.glob("*.json")]
+    def display_menu(self, options):
+        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as wofi:
+            selected_option, _ = wofi.communicate("\n".join(options.keys()).encode())
+        selected_option = selected_option.decode().strip()
+        if selected_option in options:
+            action = options[selected_option]
+            if callable(action):
+                action()
+            elif isinstance(action, dict):
+                self.display_menu(action)
+            else:
+                self.show_error_with_wofi(f"Opción no reconocida: {selected_option}")
 
-    if not profiles:
-        logging.error("No se encontraron perfiles.")
-        return
+    def open_in_workspace(self, workspace_number, command):
+        if self.check_if_installed(command):
+            p = subprocess.Popen(["swaymsg", f"exec {command}"])
+            time.sleep(self.timeout_between_workspaces)
+            subprocess.run(["swaymsg", f"move container to workspace {workspace_number}"])
 
-    rofi = subprocess.Popen(["rofi", "-dmenu", "-i", "-p", "Select a profile"],
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE)
+    def close_all_workspaces(self):
+        options = {
+            "¿Estás seguro de que quieres cerrar todos los workspaces?" : "",
+            "Sí": self._confirm_close_all,
+            "No": self.main_menu,
+        }
+        self.display_menu(options)
 
-    profile, _ = rofi.communicate("\n".join(profiles).encode())
-    profile = profile.decode().strip()
+    def _confirm_close_all(self):
+        try:
+            command = "swaymsg -t get_tree | grep '\"pid\"' | awk '{print $2}' | tr -d ',' | xargs kill"
+            subprocess.run(command, shell=True, check=True)
+            self.main_menu()
+        except Exception as e:
+            logging.error(f"Error al cerrar los workspaces: {e}")
 
-    if not profile:
-        logging.error("No se seleccionó ningún perfil.")
-        return
+    def main_menu(self):
+        options = {
+            'Perfiles': self.main,
+        }
 
-    try:
-        with open(profiles_dir / f'{profile}.json', 'r') as f:
-            workspaces = json.load(f)
-    except FileNotFoundError:
-        logging.error(f"No se encontró el archivo de configuración para el perfil '{profile}'.")
-        return
+        if self.automatic_start:
+            options['Arranque automatico'] = self.autostart_menu
 
-    for workspace, command in workspaces.items():
-        open_in_workspace(workspace, command)
+        if self.close_all_option:
+            options['Cerrar todos los workspaces'] = self.close_all_workspaces
+
+        self.display_menu(options)
+
+    def autostart_menu(self):
+        options = {
+            'Agregar': self.set_autostart_profile,
+            'Borrar': self.clear_autostart_profile if self.autostart_profile else None,
+        }
+
+        self.display_menu(options)
+
+    def set_autostart_profile(self):
+        profiles_dir = Path(self.path_profile)
+
+        profiles = [str(f.stem) for f in profiles_dir.glob("*.json")]
+
+        if not profiles:
+            self.show_error_with_wofi("No se encontraron perfiles.")
+            return
+
+        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as wofi:
+            profile, _ = wofi.communicate("\n".join(profiles).encode())
+        profile = profile.decode().strip()
+
+        if not profile:
+            self.show_error_with_wofi("No se seleccionó ningún perfil.")
+            return
+
+        with open(self.path_file_config, 'r') as f:
+            config = json.load(f)
+        config['AUTOSTART_PROFILE'] = profile
+        with open(self.path_file_config, 'w') as f:
+            json.dump(config, f, indent=4)
+
+        self.show_error_with_wofi(f'Haz seleccionado el perfil {profile} para el arranque automático.')
+
+    def clear_autostart_profile(self):
+        with open(self.path_file_config, 'r') as f:
+            config = json.load(f)
+        config['AUTOSTART_PROFILE'] = ""
+        with open(self.path_file_config, 'w') as f:
+            json.dump(config, f, indent=4)
+
+        self.show_error_with_wofi('Has borrado el perfil de arranque automático.')
+
+    def open_profile(self, profile):
+        profiles_dir = Path(self.path_profile)
+
+        try:
+            with open(profiles_dir / f'{profile}.json', 'r') as f:
+                workspaces = json.load(f)
+        except FileNotFoundError:
+            self.show_error_with_wofi(f"No se encontró el archivo de configuración para el perfil '{profile}'.")
+            return
+
+        for workspace, command in workspaces.items():
+            self.open_in_workspace(workspace, command)
+
+    def main(self):
+        profiles_dir = Path(self.path_profile)
+        profiles = [str(f.stem) for f in profiles_dir.glob("*.json")]
+
+        if not profiles:
+            self.show_error_with_wofi("No se encontraron perfiles.")
+            return
+
+        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as wofi:
+            profile, _ = wofi.communicate("\n".join(profiles).encode())
+        profile = profile.decode().strip()
+
+        if not profile:
+            self.show_error_with_wofi("No se seleccionó ningún perfil.")
+            return
+
+        self.open_profile(profile)
+
 
 if __name__ == "__main__":
-    main()
+    AppRunner().main_menu()
