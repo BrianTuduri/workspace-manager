@@ -14,13 +14,15 @@ class AppRunner:
         with open(self.path_file_config, 'r') as f:
             self.config = json.load(f)
 
+
         self.path_profile = self.config["PATH_PROFILE"]
-        self.timeout_between_workspaces = float(self.config["TIMEOUT_BETWEEN_WORKSPACES"])
-        self.log_level_str = self.config["LEVEL_LOGIN"]
-        logging.basicConfig(level=getattr(logging, self.log_level_str.upper(), logging.INFO)) # Agregando el 'self.'
+        self.menu_program = self.config["MENU_PROGRAM"]
         self.autostart_profile = self.config["AUTOSTART_PROFILE"]
         self.close_all_option = self.config["CLOSE_ALL_OPTION"]
         self.automatic_start = self.config["AUTOMATIC_START"]
+        self.timeout_between_workspaces = float(self.config["TIMEOUT_BETWEEN_WORKSPACES"])
+        self.log_level_str = self.config["LEVEL_LOGIN"]
+        logging.basicConfig(level=getattr(logging, self.log_level_str.upper(), logging.INFO))
         self.log_config()
 
         if self.automatic_start and self.autostart_profile:
@@ -34,9 +36,9 @@ class AppRunner:
         logging.info(f'close_all_option: {self.close_all_option}')
         logging.info(f'automatic_start: {self.automatic_start}')
 
-    def show_error_with_wofi(self, message):
-        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE) as wofi:
-            wofi.communicate(input=message.encode())
+    def show_error_with_menu(self, message):
+        with subprocess.Popen([self.menu_program, '--show', 'dmenu'], stdin=subprocess.PIPE) as menu:
+            menu.communicate(input=message.encode())
 
     def check_if_installed(self, app):
         try:
@@ -45,12 +47,12 @@ class AppRunner:
         except subprocess.CalledProcessError:
             message = f'La aplicación "{app}" no está instalada o no se encuentra en el PATH.'
             logging.error(message)
-            self.show_error_with_wofi(message)
+            self.show_error_with_menu_program(message)
             return False
 
     def display_menu(self, options):
-        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as wofi:
-            selected_option, _ = wofi.communicate("\n".join(options.keys()).encode())
+        with subprocess.Popen([self.menu_program, '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as menu:
+            selected_option, _ = menu.communicate("\n".join(options.keys()).encode())
         selected_option = selected_option.decode().strip()
         if selected_option in options:
             action = options[selected_option]
@@ -59,7 +61,7 @@ class AppRunner:
             elif isinstance(action, dict):
                 self.display_menu(action)
             else:
-                self.show_error_with_wofi(f"Opción no reconocida: {selected_option}")
+                self.show_error_with_menu_program(f"Opción no reconocida: {selected_option}")
 
     def open_in_workspace(self, workspace_number, command):
         if self.check_if_installed(command):
@@ -110,15 +112,15 @@ class AppRunner:
         profiles = [str(f.stem) for f in profiles_dir.glob("*.json")]
 
         if not profiles:
-            self.show_error_with_wofi("No se encontraron perfiles.")
+            self.show_error_with_menu_program("No se encontraron perfiles.")
             return
 
-        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as wofi:
-            profile, _ = wofi.communicate("\n".join(profiles).encode())
+        with subprocess.Popen([self.menu_program, '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as menu_program:
+            profile, _ = menu_program.communicate("\n".join(profiles).encode())
         profile = profile.decode().strip()
 
         if not profile:
-            self.show_error_with_wofi("No se seleccionó ningún perfil.")
+            self.show_error_with_menu_program("No se seleccionó ningún perfil.")
             return
 
         with open(self.path_file_config, 'r') as f:
@@ -127,7 +129,7 @@ class AppRunner:
         with open(self.path_file_config, 'w') as f:
             json.dump(config, f, indent=4)
 
-        self.show_error_with_wofi(f'Haz seleccionado el perfil {profile} para el arranque automático.')
+        self.show_error_with_menu_program(f'Haz seleccionado el perfil {profile} para el arranque automático.')
 
     def clear_autostart_profile(self):
         with open(self.path_file_config, 'r') as f:
@@ -136,7 +138,7 @@ class AppRunner:
         with open(self.path_file_config, 'w') as f:
             json.dump(config, f, indent=4)
 
-        self.show_error_with_wofi('Has borrado el perfil de arranque automático.')
+        self.show_error_with_menu_program('Has borrado el perfil de arranque automático.')
 
     def open_profile(self, profile):
         profiles_dir = Path(self.path_profile)
@@ -145,7 +147,7 @@ class AppRunner:
             with open(profiles_dir / f'{profile}.json', 'r') as f:
                 workspaces = json.load(f)
         except FileNotFoundError:
-            self.show_error_with_wofi(f"No se encontró el archivo de configuración para el perfil '{profile}'.")
+            self.show_error_with_menu_program(f"No se encontró el archivo de configuración para el perfil '{profile}'.")
             return
 
         for workspace, command in workspaces.items():
@@ -156,15 +158,15 @@ class AppRunner:
         profiles = [str(f.stem) for f in profiles_dir.glob("*.json")]
 
         if not profiles:
-            self.show_error_with_wofi("No se encontraron perfiles.")
+            self.show_error_with_menu_program("No se encontraron perfiles.")
             return
 
-        with subprocess.Popen(['wofi', '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as wofi:
-            profile, _ = wofi.communicate("\n".join(profiles).encode())
+        with subprocess.Popen([self.menu_program, '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as menu_program:
+            profile, _ = menu_program.communicate("\n".join(profiles).encode())
         profile = profile.decode().strip()
 
         if not profile:
-            self.show_error_with_wofi("No se seleccionó ningún perfil.")
+            self.show_error_with_menu_program("No se seleccionó ningún perfil.")
             return
 
         self.open_profile(profile)

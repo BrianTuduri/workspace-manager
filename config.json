@@ -4,5 +4,6 @@
     "CLOSE_ALL_OPTION": true,
     "AUTOMATIC_START": true,
     "AUTOSTART_PROFILE": "",
-    "LEVEL_LOGIN": "DEBUG"
+    "LEVEL_LOGIN": "INFO",
+    "MENU_PROGRAM": "wofi"
 }
