@@ -65,7 +65,7 @@ class AppRunner:
 
     def open_in_workspace(self, workspace_number, command):
         if self.check_if_installed(command):
-            p = subprocess.Popen(["swaymsg", f"exec {command}"])
+            p = subprocess.Popen(["swaymsg", f"exec {os.path.expanduser(command)}"])
             time.sleep(self.timeout_between_workspaces)
             subprocess.run(["swaymsg", f"move container to workspace {workspace_number}"])
 
