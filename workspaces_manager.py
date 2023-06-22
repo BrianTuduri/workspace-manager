@@ -14,7 +14,6 @@ class AppRunner:
         with open(self.path_file_config, 'r') as f:
             self.config = json.load(f)
 
-
         self.path_profile = os.path.expanduser(self.config["PATH_PROFILE"])
         self.menu_program = self.config["MENU_PROGRAM"]
         self.autostart_profile = self.config["AUTOSTART_PROFILE"]
@@ -31,7 +30,7 @@ class AppRunner:
     def log_config(self):
         logging.info(f'path_profile: {self.path_profile}')
         logging.info(f'timeout_between_workspaces: {self.timeout_between_workspaces}')
-        logging.info(f'log_level_str: {self.log_level_str}') # Agregando el 'self.'
+        logging.info(f'log_level_str: {self.log_level_str}')
         logging.info(f'autostart_profile: {self.autostart_profile}')
         logging.info(f'close_all_option: {self.close_all_option}')
         logging.info(f'automatic_start: {self.automatic_start}')
@@ -47,7 +46,7 @@ class AppRunner:
         except subprocess.CalledProcessError:
             message = f'La aplicación "{app}" no está instalada o no se encuentra en el PATH.'
             logging.error(message)
-            self.show_error_with_menu_program(message)
+            self.show_error_with_menu(message)
             return False
 
     def display_menu(self, options):
@@ -61,13 +60,13 @@ class AppRunner:
             elif isinstance(action, dict):
                 self.display_menu(action)
             else:
-                self.show_error_with_menu_program(f"Opción no reconocida: {selected_option}")
+                self.show_error_with_menu(f"Opción no reconocida: {selected_option}")
 
     def open_in_workspace(self, workspace_number, command):
         if self.check_if_installed(command):
             p = subprocess.Popen(["swaymsg", f"exec {os.path.expanduser(command)}"])
             time.sleep(self.timeout_between_workspaces)
-            subprocess.run(["swaymsg", f"move container to workspace {workspace_number}"])
+            subprocess.run(["swaymsg", f"move container to workspace number {workspace_number}"], check=True)
 
     def close_all_workspaces(self):
         options = {
@@ -112,7 +111,7 @@ class AppRunner:
         profiles = [str(f.stem) for f in profiles_dir.glob("*.json")]
 
         if not profiles:
-            self.show_error_with_menu_program("No se encontraron perfiles.")
+            self.show_error_with_menu("No se encontraron perfiles.")
             return
 
         with subprocess.Popen([self.menu_program, '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as menu_program:
@@ -120,7 +119,7 @@ class AppRunner:
         profile = profile.decode().strip()
 
         if not profile:
-            self.show_error_with_menu_program("No se seleccionó ningún perfil.")
+            self.show_error_with_menu("No se seleccionó ningún perfil.")
             return
 
         with open(self.path_file_config, 'r') as f:
@@ -129,7 +128,7 @@ class AppRunner:
         with open(self.path_file_config, 'w') as f:
             json.dump(config, f, indent=4)
 
-        self.show_error_with_menu_program(f'Haz seleccionado el perfil {profile} para el arranque automático.')
+        self.show_error_with_menu(f'Haz seleccionado el perfil {profile} para el arranque automático.')
 
     def clear_autostart_profile(self):
         with open(self.path_file_config, 'r') as f:
@@ -138,7 +137,7 @@ class AppRunner:
         with open(self.path_file_config, 'w') as f:
             json.dump(config, f, indent=4)
 
-        self.show_error_with_menu_program('Has borrado el perfil de arranque automático.')
+        self.show_error_with_menu('Has borrado el perfil de arranque automático.')
 
     def open_profile(self, profile):
         profiles_dir = Path(self.path_profile)
@@ -147,7 +146,7 @@ class AppRunner:
             with open(profiles_dir / f'{profile}.json', 'r') as f:
                 workspaces = json.load(f)
         except FileNotFoundError:
-            self.show_error_with_menu_program(f"No se encontró el archivo de configuración para el perfil '{profile}'.")
+            self.show_error_with_menu(f"No se encontró el archivo de configuración para el perfil '{profile}'.")
             return
 
         for workspace, command in workspaces.items():
@@ -158,7 +157,7 @@ class AppRunner:
         profiles = [str(f.stem) for f in profiles_dir.glob("*.json")]
 
         if not profiles:
-            self.show_error_with_menu_program("No se encontraron perfiles.")
+            self.show_error_with_menu("No se encontraron perfiles.")
             return
 
         with subprocess.Popen([self.menu_program, '--show', 'dmenu'], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as menu_program:
@@ -166,7 +165,7 @@ class AppRunner:
         profile = profile.decode().strip()
 
         if not profile:
-            self.show_error_with_menu_program("No se seleccionó ningún perfil.")
+            self.show_error_with_menu("No se seleccionó ningún perfil.")
             return
 
         self.open_profile(profile)
