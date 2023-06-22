@@ -3,7 +3,7 @@
     "TIMEOUT_BETWEEN_WORKSPACES": 0.8,
     "CLOSE_ALL_OPTION": true,
     "AUTOMATIC_START": true,
-    "AUTOSTART_PROFILE": "",
+    "AUTOSTART_PROFILE": "work_mode",
     "LEVEL_LOGIN": "INFO",
     "MENU_PROGRAM": "wofi"
 }
